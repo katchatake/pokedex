@@ -1,7 +1,7 @@
 <template>
   <div>
     <b-container>
-      <b-row>
+      <b-row class="mt-5">
         <b-col md="4" v-for="(pokemon, index) in pokemons" :key="index">
           <b-card no-body class="overflow-hidden mt-3" style="max-width: 540px">
             <b-row no-gutters>
@@ -79,6 +79,7 @@
 
 <script>
 import axios from "axios";
+import { mapState, mapActions } from "vuex";
 export default {
   name: "Lista",
   data: () => ({
@@ -93,18 +94,24 @@ export default {
   }),
   created: function () {
     this.getPokemos();
+    this.getPokemons();
   },
-  computed: {},
+  computed: {
+    ...mapState(["favoritePokemons"]),
+  },
   methods: {
+    ...mapActions(["addFavorite", "delFavorite", "getPokemons"]),
     like: function (pokemon) {
       let pokes = this.pokemons;
       let index = pokes.findIndex((poke) => poke.name == pokemon.name);
       this.pokemons[index].status = true;
+      this.addFavorite(pokemon);
     },
     dislike: function (pokemon) {
       let pokes = this.pokemons;
       let index = pokes.findIndex((poke) => poke.name == pokemon.name);
       this.pokemons[index].status = false;
+      this.delFavorite(pokemon);
     },
     see: function (pokemon) {
       this.pokemon.name = pokemon.name;
@@ -132,22 +139,38 @@ export default {
       return Math.floor(Math.random() * (max - min)) + min;
     },
     validPokemon: function (pokemon) {
-      let pokes = this.pokemons;
+      let pokes = this.favoritePokemons;
+
       return pokes.find((poke) => poke.name == pokemon.name);
+    },
+    validFavorite: function () {
+      let favorites = this.favoritePokemons;
+      let pokemons = this.pokemons;
+
+      Object.values(favorites).forEach((key) => {
+        let index = pokemons.findIndex((poke) => poke.name == key.name);
+        console.log(index);
+      });
     },
     getPokemos: async function () {
       try {
         let pokemon = [];
-        for (let index = 1; index <= 50; index++) {
+        for (let index = 1; index <= 152; index++) {
           let id = this.getRandomInt(index, 152);
-          let res = await axios.get(`https://pokeapi.co/api/v2/pokemon/${id}`);
+          let res = await axios.get(
+            `https://pokeapi.co/api/v2/pokemon/${index}`
+          );
           //console.log(this.validPokemon(res.data));
-          if (this.validPokemon(res.data) == undefined) {
+          let pokeVal = this.validPokemon(res.data);
+          if (pokeVal == undefined) {
             //pokemon.push(this.mutationsPokemon(id, res.data));
-            this.pokemons.push(this.mutationsPokemon(id, res.data));
+            this.pokemons.push(this.mutationsPokemon(index, res.data));
+          } else {
+            this.pokemons.push(pokeVal);
           }
         }
-        //this.pokemons = pokemon;
+        //this.validFavorite();
+
         //console.log(this.pokemons);
       } catch (error) {
         console.log(error);
